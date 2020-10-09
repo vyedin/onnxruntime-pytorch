@@ -57,10 +57,11 @@ def argument(a: Argument) -> DispatcherArgument:
         )
     else:
         la = legacy_dispatcher.argument(a)
+        assert len(la) == 1, "TensorOptions arguments not supported"
         return DispatcherArgument(
-            type=la.type,
-            name=la.name,
-            argument=la.argument,
+            type=la[0].type,
+            name=la[0].name,
+            argument=la[0].argument,
         )
 
 def name(func: FunctionSchema) -> str:
