@@ -39,6 +39,108 @@ void format(Stack& stack, size_t num_inputs) {
   push(stack, ss.str());
 }
 
+// IValue tags are intentionally private, so we need additional logic to cast
+// the IValue type to the specified format.
+std::string getFormattedArg(char key, const IValue& ival, int precision=6) {
+  //TODO: Implement precison-based formatting
+  std::stringstream ss;
+  bool added = false;
+  switch (key) {
+    case 'd':
+    case 'i': {
+      TORCH_CHECK(
+          ival.isScalar(),
+          "%",
+          key,
+          " format: A number is required, not ",
+          ival.tagKind());
+      if (ival.isDouble()) {
+        std::stringstream().swap(ss);
+        ss << static_cast<int>(ival.toDouble());
+        added = true;
+      }
+      break;
+    }
+    case 'e':
+    case 'E': {
+      TORCH_CHECK(
+        ival.isScalar(),
+        "%",
+        key,
+        " format: A number is required, not ",
+        ival.tagKind());
+      ss << std::setprecision(precision) << std::scientific;
+      if (key == 'E') {
+        ss << std::uppercase;
+      }
+      if (ival.isInt()) {
+        ss << static_cast<float>(ival.toInt());
+      } else {
+        ss << static_cast<float>(ival.toDouble());
+      }
+      added = true;
+      break;
+    }
+    case 'f':
+    case 'F': {
+      TORCH_CHECK(
+          ival.isScalar(),
+          "%",
+          key,
+          " format: A number is required, not ",
+          ival.tagKind());
+      ss << std::setprecision(precision) << std::fixed;
+      if (ival.isInt()) {
+        ss << static_cast<float>(ival.toInt());
+      } else {
+        ss << static_cast<float>(ival.toDouble());
+      }
+      added = true;
+      break;
+    }
+    case 'c': {
+      TORCH_CHECK(ival.isInt() || (ival.isString() && ival.toStringRef().length() == 1), "%c requires int or char");
+      if (ival.isInt()) {
+        ss << static_cast<char>(ival.toInt());
+        added = true;
+      }
+      break;
+    }
+  }
+  if (!added) {
+    ss << ival;
+  }
+  return ss.str();
+}
+
+void percentFormat(Stack& stack, size_t num_inputs) {
+  std::vector<char> specifiers = {'d', 'i', 'e', 'E', 'f', 'F', 's', 'c'};
+  auto format = peek(stack, 0, num_inputs).toStringRef();
+  auto args = last(stack, num_inputs - 1)[0];
+  auto args_size = !args.isTuple() ? 1 : args.toTuple()->elements().size();
+  std::stringstream ss;
+  size_t used_args = 0;
+  for (size_t begin = 0; true; ++used_args) {
+    size_t loc = format.find('%', begin);
+    if (loc >= format.length() - 1) {
+      ss << format.substr(begin);
+      break;
+    }
+    ss << format.substr(begin, loc - begin);
+    TORCH_CHECK(used_args < args_size, "Too few arguments for format string");
+    char key = format.at(loc + 1);
+    TORCH_CHECK(std::find(specifiers.begin(), specifiers.end(), key) !=
+        specifiers.end(), "The specifier ", key, " is not supported in TorchScript");
+    auto arg = !args.isTuple() ? args : args.toTuple()->elements()[used_args];
+    auto ins = getFormattedArg(key, arg);
+    ss << ins;
+    begin = loc + 2;
+  }
+  TORCH_CHECK(used_args == args_size, "Too many arguments for format string");
+  drop(stack, num_inputs);
+  push(stack, ss.str());
+}
+
 void listUnpack(Stack& stack, size_t num_outputs) {
   auto list = pop(stack).toList();
   TORCH_CHECK(
