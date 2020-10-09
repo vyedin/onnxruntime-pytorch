@@ -78,25 +78,55 @@ VkQueue acquire_queue(
 
 } // namespace
 
-void Context::Deleter::operator()(const VkDevice device) const {
-  // No VK_CHECK.  Don't want an exception thrown in the destructor.
-  vkDeviceWaitIdle(device);
-  vkDestroyDevice(device, nullptr);
-}
-
 Context::Context(const Adapter& adapter)
     : adapter_(adapter),
       device_(
           create_device(
               adapter.handle,
               adapter.compute_queue_family_index),
-          Deleter{}),
+          &VK_DELETER(Device)),
       queue_(acquire_queue(device(), adapter.compute_queue_family_index)),
       command_(gpu()),
       shader_(gpu()),
       pipeline_(gpu()),
       descriptor_(gpu()),
       resource_(gpu()) {
+  TORCH_INTERNAL_ASSERT_DEBUG_ONLY(
+      device_,
+      "Invalid Vulkan device!");
+}
+
+Context::~Context() {
+  try {
+    flush();
+  }
+  catch (...) {
+  }
+}
+
+void Context::dispatch(
+    Command::Buffer& command_buffer,
+      const Shader::Layout::Descriptor& shader_layout_descriptor,
+      const Shader::Descriptor& shader_descriptor,
+      const Descriptor::Set& descriptor_set) {
+  command_buffer.bind(
+      pipeline().cache.retrieve({
+        pipeline().layout.cache.retrieve({
+          shader().layout.cache.retrieve(shader_layout_descriptor),
+        }),
+        shader().cache.retrieve(shader_descriptor),
+        Shader::WorkGroup{},
+      }));
+  command_buffer.bind(descriptor_set);
+  command_buffer.dispatch(Shader::WorkGroup{});
+}
+
+void Context::flush() {
+  VK_CHECK(vkDeviceWaitIdle(device()));
+
+  resource().pool.purge();
+  descriptor().pool.purge();
+  command().pool.purge();
 }
 
 Context* context() {
