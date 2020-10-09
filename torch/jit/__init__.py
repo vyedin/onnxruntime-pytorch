@@ -1,4 +1,8 @@
 import torch._C
+from torch.jit._isinstance import _isinstance
+from typing import List, Dict, Optional, Tuple, Union
+import typing
+from sys import version_info
 
 from torch.utils import set_module
 
@@ -68,6 +72,10 @@ Error.__qualname__ = "Error"
 def annotate(the_type, the_value):
     # noop in python
     return the_value
+
+
+def isinstance(the_obj, the_type) -> bool:
+    return _isinstance(the_obj, the_type)
 
 
 if not torch._C._jit_init():
