@@ -2,7 +2,7 @@ import os
 import contextlib
 import textwrap
 import itertools
-from typing import List, Dict, Optional, Iterator, Tuple, Set, Callable, Any, TypeVar, Union, Sequence
+from typing import List, Dict, Optional, Iterator, Tuple, Set, Callable, Any, TypeVar, Union, Sequence, Iterable
 import yaml
 from enum import Enum
 from collections import OrderedDict, defaultdict
@@ -17,6 +17,7 @@ from tools.codegen.api.types import *
 import tools.codegen.api.cpp as cpp
 import tools.codegen.api.dispatcher as dispatcher
 import tools.codegen.api.native as native
+import tools.codegen.api.meta as meta
 import tools.codegen.local as local
 
 try:
@@ -108,18 +109,31 @@ def with_native_function(func: Callable[[NativeFunction], T]) -> Callable[[Nativ
                 return func(f)
     return wrapper
 
+def with_structured_native_function_group(func: Callable[[NativeFunctionGroup], T]) -> Callable[[NativeFunctionGroup], T]:
+    @functools.wraps(func)
+    def wrapper(g: NativeFunctionGroup) -> T:
+        assert g.structured()
+        f = g.out
+        assert f is not None
+        with context(f'in {f.loc}:\n  {f.func}'):
+            with local.parametrize(
+                use_c10_dispatcher=f.use_c10_dispatcher
+            ):
+                return func(g)
+    return wrapper
+
 # These two functions purposely return generators in analogy to map()
 # so that you don't mix up when you need to list() them
 
 # Map over function that may return None; omit Nones from output sequence
-def mapMaybe(func: Callable[[T], Optional[S]], xs: Sequence[T]) -> Iterator[S]:
+def mapMaybe(func: Callable[[T], Optional[S]], xs: Iterable[T]) -> Iterator[S]:
     for x in xs:
         r = func(x)
         if r is not None:
             yield r
 
 # Map over function that returns sequences and cat them all together
-def concatMap(func: Callable[[T], Sequence[S]], xs: Sequence[T]) -> Iterator[S]:
+def concatMap(func: Callable[[T], Sequence[S]], xs: Iterable[T]) -> Iterator[S]:
     for x in xs:
         for r in func(x):
             yield r
@@ -192,7 +206,7 @@ def compute_type_method(
     # def() invocations (for schema registration); do not generate
     # any impl() invocations for, e.g., catch-all kernels
     def_only: bool = False
-) -> Callable[[NativeFunction], Optional[str]]:
+) -> Callable[[NativeFunctionGroup], List[str]]:
 
     if def_only:
         assert target is Target.REGISTRATION and dispatch is None
@@ -310,7 +324,58 @@ def compute_type_method(
         else:
             assert_never(target)
 
-    return func
+    @with_structured_native_function_group
+    def structured_func(g: NativeFunctionGroup) -> List[str]:
+        f = g.out
+        assert f is not None
+
+
+
+        # TODO: simplify this: probably should be illegal to not have dispatch
+        # for structured
+        if dispatch is not None:
+            if f.dispatch is None or dispatch not in f.dispatch:
+                return []
+        else:
+            if f.dispatch is not None and target is not Target.REGISTRATION:
+                return []
+
+        # Yes declaration
+        if target is Target.DEFINITION:
+            # functional
+            name = cpp.name(g.functional.func)  # TODO: add dispatcher.name
+            returns_type = dispatcher.returns_type(g.functional.func.returns)
+            args = dispatcher.arguments(g.functional.func)
+            args_str = ', '.join(map(str, args))
+            args_exprs_str = ', '.join(a.name for a in args)
+
+            if f.dispatch is None:
+                cpp_name = cpp.name(f.func)
+                impl_name = f"at::native::{cpp_name}"
+            else:
+                assert dispatch is not None
+                impl_name = f"at::native::{f.dispatch[dispatch]}"
+
+            device_guard = ''
+            return [f"""\
+{returns_type} {name}({args_str}) {{
+    {device_guard}
+    auto meta_result = meta::{name}({args_exprs_str});
+    auto result = tensor_from_meta(meta_result);
+    {impl_name}(result, {args_exprs_str});
+    return result;
+}}
+"""]
+
+        return []
+
+    def group_func(g: NativeFunctionGroup) -> List[str]:
+        if g.structured():
+            return structured_func(g)
+        else:
+            return list(mapMaybe(func, g.functions()))
+
+    return group_func
 
 # Generates Function.cpp and Function.h.  These files provide the
 # functional public C++ API, and the scaffolding to call into
@@ -442,6 +507,14 @@ def compute_native_function_declaration(f: NativeFunction) -> List[str]:
         rs.append(f"CAFFE2_API {returns_type} {n}({', '.join(map(lambda a: a.str_with_default(), args))});")
 
     return rs
+
+@with_structured_native_function_group
+def compute_meta_function_declaration(g: NativeFunctionGroup) -> str:
+    sig = g.signature()
+    name = meta.name(sig)
+    returns_type = meta.returns_type(sig.returns)
+    args = meta.arguments(sig)
+    return f"CAFFE2_API {returns_type} {name}({', '.join(map(str, args))});"
 
 # Generates BackendSelectRegister.cpp, a series of kernels which provide
 # specialized computation of dispatch key for operator signatures which cannot
@@ -923,9 +996,6 @@ def main() -> None:
         assert f.func.kind() not in d
         d[f.func.kind()] = f
     grouped_native_functions = list(map(NativeFunctionGroup.from_dict, pre_grouped_native_functions.values()))
-    # NB: At the moment, grouped_native_functions isn't used by anything,
-    # this code lives here to help potential future consumers; for a live
-    # example see https://github.com/pytorch/pytorch/pull/45277
 
     template_dir = os.path.join(options.source_path, "templates")
 
@@ -979,9 +1049,9 @@ def main() -> None:
         fm.write_with_template(f'{dispatch}Type.h', h_template, lambda: {
             'Type': f'{dispatch}Type',
             'extra_cuda_headers': extra_cuda_headers if 'CUDA' in dispatch else '',  # TODO: remove this
-            'type_derived_method_declarations': list(mapMaybe(
+            'type_derived_method_declarations': list(concatMap(
                 compute_type_method(dispatch, target=Target.DECLARATION, op_registration_whitelist=op_registration_whitelist),
-                native_functions
+                grouped_native_functions
             )),
         })
         fm.write_with_template(f'{dispatch}Type.cpp', cpp_template, lambda: {
@@ -997,43 +1067,43 @@ def main() -> None:
                 '#include <ATen/LegacyTHFunctionsCUDA.h>' if dispatch == "CUDA" else
                 '',
             'Backend': dispatch,
-            'type_derived_method_definitions': list(mapMaybe(
+            'type_derived_method_definitions': list(concatMap(
                 compute_type_method(dispatch, target=Target.DEFINITION, op_registration_whitelist=op_registration_whitelist),
-                native_functions
+                grouped_native_functions
             )),
-            'function_registrations': list(mapMaybe(
+            'function_registrations': list(concatMap(
                 compute_type_method(
                     dispatch, target=Target.REGISTRATION, op_registration_whitelist=op_registration_whitelist),
-                native_functions)),
+                grouped_native_functions)),
         })
         del fm
 
     cpu_fm.write('TypeDefault.h', lambda: {
         'type_method_declarations':
-        list(mapMaybe(
+        list(concatMap(
             compute_type_method(None, target=Target.DECLARATION, op_registration_whitelist=op_registration_whitelist),
-            native_functions)) +
-        list(mapMaybe(
+            grouped_native_functions)) +
+        list(concatMap(
             compute_type_method('Math', target=Target.DECLARATION, op_registration_whitelist=op_registration_whitelist),
-            native_functions)),
+            grouped_native_functions)),
 
     })
     cpu_fm.write('TypeDefault.cpp', lambda: {
         'type_method_definitions':
-        list(mapMaybe(
+        list(concatMap(
             compute_type_method(None, target=Target.DEFINITION, op_registration_whitelist=op_registration_whitelist),
-            native_functions)) +
-        list(mapMaybe(
+            grouped_native_functions)) +
+        list(concatMap(
             compute_type_method('Math', target=Target.DEFINITION, op_registration_whitelist=op_registration_whitelist),
-            native_functions)),
+            grouped_native_functions)),
 
-        'function_registrations': list(mapMaybe(
+        'function_registrations': list(concatMap(
             compute_type_method(None, target=Target.REGISTRATION, op_registration_whitelist=op_registration_whitelist),
-            native_functions)),
+            grouped_native_functions)),
 
-        'math_function_registrations': list(mapMaybe(
+        'math_function_registrations': list(concatMap(
             compute_type_method('Math', target=Target.REGISTRATION, op_registration_whitelist=op_registration_whitelist),
-            native_functions)),
+            grouped_native_functions)),
     })
     cpu_fm.write('Functions.h', lambda: {
         'function_declarations': list(mapMaybe(compute_function(target=Target.DECLARATION), native_functions)),
@@ -1053,6 +1123,11 @@ def main() -> None:
     cpu_fm.write('NativeFunctions.h', lambda: {
         'native_function_declarations': list(concatMap(compute_native_function_declaration, native_functions)),
     })
+    cpu_fm.write('MetaFunctions.h', lambda: {
+        'declarations':
+            list(mapMaybe(compute_meta_function_declaration,
+                          filter(lambda g: g.structured(), grouped_native_functions))),
+    })
     cpu_fm.write('BackendSelectRegister.cpp', lambda: {
         'backend_select_method_definitions':
             list(mapMaybe(compute_backend_select(target=Target.DEFINITION), native_functions)),
@@ -1062,9 +1137,9 @@ def main() -> None:
 
     if options.force_schema_registration:
         def computeSchemaRegister() -> Dict[str, object]:
-            schema_registrations = list(mapMaybe(
+            schema_registrations = list(concatMap(
                 compute_type_method(None, target=Target.REGISTRATION, op_registration_whitelist=None, def_only=True),
-                native_functions))
+                grouped_native_functions))
             return {
                 'schema_registrations': schema_registrations,
             }

@@ -394,5 +394,21 @@ class NativeSignature:
             _returns_type=returns_type,
         )
 
+# ------------------------------------------------------------------- #
+
+#                           meta api
+
+# ------------------------------------------------------------------- #
+
+@dataclass(frozen=True)
+class MetaArgument:
+    type: str
+    name: str
+    # By fiat, meta argument functions must be on full c10 dispach
+    argument: Argument
+
+    def __str__(self) -> str:
+        return f"{self.type} {self.name}"
+
 # Functions only, no types
 from tools.codegen.api import cpp, dispatcher, native

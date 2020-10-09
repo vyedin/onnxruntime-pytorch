@@ -107,6 +107,9 @@ class NativeFunction:
     # defined.  This is for conveniently reporting error messages!
     loc: 'Location'
 
+    # TODO COMMENT TODO
+    structured: bool
+
     # NB: The benefit of defining a dataclass is that we automatically get
     # a constructor defined for all the fields we specify.  No need
     # to explicitly write it out.
@@ -149,6 +152,9 @@ class NativeFunction:
         device_guard = e.pop('device_guard', True)
         assert isinstance(device_guard, bool), f'not a bool: {device_guard}'
 
+        structured = e.pop('structured', False)
+        assert isinstance(structured, bool), f'not a bool: {structured}'
+
         python_module = e.pop('python_module', None)
         assert python_module is None or isinstance(python_module, str), f'not a str: {python_module}'
 
@@ -175,6 +181,7 @@ class NativeFunction:
             func=func,
             use_c10_dispatcher=use_c10_dispatcher,
             variants=variants,
+            structured=structured,
             manual_kernel_registration=manual_kernel_registration,
             python_module=python_module,
             category_override=category_override,
@@ -197,6 +204,10 @@ class NativeFunction:
                 "otherwise you will tickle a Python argument binding bug " \
                 "(which usually manifests itself as the result variable being undefined.)"
 
+        if self.structured:
+            assert self.func.kind() == SchemaKind.out, "Put structured field on the out= " \
+                "variant of a function"
+
 SchemaKind = Enum('SchemaKind', ('functional', 'inplace', 'out'))
 
 # Represents a bundle of native functions that are semantically related.
@@ -217,6 +228,11 @@ class NativeFunctionGroup:
                         "NativeFunctionGroup constructed from two NativeFunctions "
                         f"that don't have matching signatures: {test_sig} != {f.func.signature()}"
                     )
+
+    def structured(self) -> bool:
+        if self.out is None:
+            return False
+        return self.out.structured
 
     def signature(self) -> 'FunctionSchema':
         if self.out is not None:
