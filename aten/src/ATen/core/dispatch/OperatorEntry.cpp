@@ -105,7 +105,7 @@ std::list<AnnotatedKernel>::iterator OperatorEntry::registerKernel(
 
   // Add the kernel to the kernels list,
   // possibly creating the list if this is the first kernel.
-  auto& k = dispatch_key.has_value() ? kernels_[*dispatch_key] : catchAllKernel_;
+  auto& k = dispatch_key.has_value() ? kernels_[*dispatch_key] : kernels_[DispatchKey::Math];
 
   if (k.size() > 0) {
     TORCH_WARN("Registering a kernel (", debug, ") for operator ", name_, " for dispatch key ", toString(dispatch_key), " that overwrote a previously registered kernel with the same dispatch key for the same operator.");
@@ -132,20 +132,17 @@ void OperatorEntry::deregisterKernel_(
   c10::optional<DispatchKey> dispatch_key,
   std::list<AnnotatedKernel>::iterator kernel
 ) {
-  if (dispatch_key.has_value()) {
-    auto found = kernels_.find(*dispatch_key);
-    TORCH_INTERNAL_ASSERT(found != kernels_.end(), "Tried to deregister a kernel for dispatch key ", toString(dispatch_key), " but there are no kernels registered for this dispatch key. The operator is ", toString(name_));
-    auto& k = found->second;
-    k.erase(kernel);
-    if (k.empty()) {
-      // the invariant says we don't want empty lists but instead remove the list from the map
-      kernels_.erase(found);
-    }
-    updateDispatchTable_(dispatcher, *dispatch_key);
-  } else {
-    catchAllKernel_.erase(kernel);
-    updateDispatchTableFull_(dispatcher);
+  // Redirect registrations to catchAll to Math.
+  DispatchKey dk = dispatch_key.has_value() ? *dispatch_key : DispatchKey::Math;
+  auto found = kernels_.find(dk);
+  TORCH_INTERNAL_ASSERT(found != kernels_.end(), "Tried to deregister a kernel for dispatch key ", toString(dispatch_key), " but there are no kernels registered for this dispatch key. The operator is ", toString(name_));
+  auto& k = found->second;
+  k.erase(kernel);
+  if (k.empty()) {
+    // the invariant says we don't want empty lists but instead remove the list from the map
+    kernels_.erase(found);
   }
+  updateDispatchTable_(dispatcher, dk);
 }
 
 void OperatorEntry::updateFallback(const c10::Dispatcher& dispatcher, DispatchKey dispatch_key) {
@@ -222,7 +219,7 @@ std::pair<const AnnotatedKernel&, const char*> OperatorEntry::computeDispatchTab
   }
 
   // 2.1 Use DefaultBackend kernel if available.
-  if (isIncludedInAlias(dispatch_key, DispatchKey::DefaultBackend)) {
+  if (dispatch_key == DispatchKey::Undefined || isIncludedInAlias(dispatch_key, DispatchKey::DefaultBackend)) {
     if (auto default_backend_registration = getKernelForDispatchKey(DispatchKey::DefaultBackend)) {
       return {*default_backend_registration.value(), "default backend kernel"};
     }
@@ -236,7 +233,7 @@ std::pair<const AnnotatedKernel&, const char*> OperatorEntry::computeDispatchTab
   //      when there's no direct registration to its corresponding backend key or DefaultBackend.
   //      For AutogradOther, we return ambiguousAutogradOtherKernel_ if there's registration
   //      to any of its backends.
-  if (isIncludedInAlias(dispatch_key, DispatchKey::Math)) {
+  if (dispatch_key == DispatchKey::Undefined || isIncludedInAlias(dispatch_key, DispatchKey::Math)) {
     if (auto math_registration = getKernelForDispatchKey(DispatchKey::Math)) {
       if (dispatch_key == DispatchKey::AutogradOther
           && hasKernelForAnyDispatchKey(c10::autogradother_backends)) {
@@ -260,6 +257,8 @@ std::pair<const AnnotatedKernel&, const char*> OperatorEntry::computeDispatchTab
   if (isIncludedInAlias(dispatch_key, DispatchKey::Autograd)
       && !has_backend_kernel && !catchAllKernel_.empty()) {
     TORCH_INTERNAL_ASSERT(catchAllKernel_.front().kernel.isValid());
+    // Prepare for catchAll removal, make sure it's not used in dispatchTable
+    TORCH_INTERNAL_ASSERT(false);
     return {catchAllKernel_.front(), "catch all"};
   }
 
@@ -270,6 +269,8 @@ std::pair<const AnnotatedKernel&, const char*> OperatorEntry::computeDispatchTab
   // 4. Catch all
   } else if (!catchAllKernel_.empty()) {
     TORCH_INTERNAL_ASSERT(catchAllKernel_.front().kernel.isValid());
+    // Prepare for catchAll removal, make sure it's not used in dispatchTable
+    TORCH_INTERNAL_ASSERT(false);
     return {catchAllKernel_.front(), "catch all"};
 
   // 5. Default to error
@@ -293,6 +294,11 @@ void OperatorEntry::updateDispatchTable_(const c10::Dispatcher& dispatcher, Disp
   }
   for (auto k : c10::getRuntimeDispatchKeySet(dispatch_key)) {
     updateDispatchTableEntry_(dispatcher, k);
+  }
+  // Registration to DefaultBackend and Math should be populated to Undefined.
+  // We cannot do this above since Undefined cannot be represented in DispatchKeySet.
+  if (dispatch_key == DispatchKey::Math || dispatch_key == DispatchKey::DefaultBackend) {
+    updateDispatchTableEntry_(dispatcher, DispatchKey::Undefined);
   }
   // Note [Refresh Runtime Autograd entries in dispatchTable_]
   // Registering to backend key might affect computed entry at its Autograd backend key due to (2.1) & (2.3).
