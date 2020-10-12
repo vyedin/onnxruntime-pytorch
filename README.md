@@ -1,3 +1,7 @@
+# Microsoft Fork for ONNX Runtime Prototyping
+
+> **NOTE:** This is a [_fork of PyTorch_](https://github.com/pytorch/pytorch) for prototyping various levels of support for the ONNX Runtime within Microsoft. Please do not submit issues or pull requests here and instead refer to the [upstream PyTorch project](https://github.com/pytorch/pytorch).
+
 ![PyTorch Logo](https://github.com/pytorch/pytorch/blob/master/docs/source/_static/img/pytorch-logo-dark.png)
 
 --------------------------------------------------------------------------------
