@@ -615,6 +615,8 @@ inline DispatchKey computeDispatchKey(c10::optional<ScalarType> dtype, c10::opti
             return DispatchKey::Vulkan;
           case DeviceType::Metal:
             return DispatchKey::Metal;
+          case DeviceType::ORT:
+            return DispatchKey::ORT;
           default:
             AT_ERROR("Unsupported device type for dense layout: ", device_.type());
         }
@@ -679,6 +681,8 @@ inline DeviceType computeDeviceType(DispatchKey tid) {
     return DeviceType::Vulkan;
   } else if (tid == DispatchKey::Metal) {
     return DeviceType::Metal;
+  } else if (tid == DispatchKey::ORT) {
+    return DeviceType::ORT;
   } else {
     AT_ASSERTM(false, "Unknown DispatchKey: ", tid);
   }

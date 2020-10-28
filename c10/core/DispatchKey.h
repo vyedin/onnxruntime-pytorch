@@ -61,6 +61,7 @@ enum class DispatchKey : uint8_t {
   XLA, // lives out of tree at https://github.com/pytorch/xla
   Vulkan,
   Metal,
+  ORT, // TODO: comment on where ORT extension lives
 
   // These are Caffe2 device types which we grandfathered into
   // DispatchKey.
@@ -209,14 +210,15 @@ enum class DispatchKey : uint8_t {
   // you are responsible for handling autograd yourself, or deferring to other
   // operators which support autograd.
 
-  // Currently we only have backend-specific autograd keys for CPU/CUDA/XLA and
-  // reserved user-defined backends. All other in-tree backends share the
+  // Currently we only have backend-specific autograd keys for CPU/CUDA/XLA/ORT
+  // and reserved user-defined backends. All other in-tree backends share the
   // AutogradOther key. We can add specific autograd key for those backends
   // upon request.
   AutogradOther,
   AutogradCPU,
   AutogradCUDA,
   AutogradXLA,
+  AutogradORT,
   // Here are some reserved pre-autograd keys for user-defined backends, see
   // Note [Private use DispatchKey]
   AutogradPrivateUse1,

@@ -42,6 +42,7 @@ enum class Backend {
   QuantizedCUDA,
   Undefined,
   MkldnnCPU,
+  ORT,
   NumOptions
 };
 
@@ -88,6 +89,8 @@ static inline Backend toDense(Backend b) {
       return Backend::QuantizedCPU;
     case Backend::QuantizedCUDA:
       return Backend::QuantizedCUDA;
+    case Backend::ORT:
+      return Backend::ORT;
     default:
       throw std::runtime_error("Unknown backend");
   }
@@ -122,6 +125,8 @@ static inline Backend dispatchKeyToBackend(DispatchKey t) {
     return Backend::QuantizedCPU;
   } else if (t == DispatchKey::QuantizedCUDA) {
     return Backend::QuantizedCUDA;
+  } else if (t == DispatchKey::ORT || t == DispatchKey::AutogradORT) {
+    return Backend::ORT;
   } else if (t == DispatchKey::Undefined) {
     return Backend::Undefined;
   } else {
@@ -159,6 +164,8 @@ static inline DispatchKey backendToDispatchKey(Backend b) {
       return DispatchKey::QuantizedCPU;
     case Backend::QuantizedCUDA:
       return DispatchKey::QuantizedCUDA;
+    case Backend::ORT:
+      return DispatchKey::ORT;
     case Backend::Undefined:
       return DispatchKey::Undefined;
     default:
@@ -195,6 +202,8 @@ static inline DeviceType backendToDeviceType(Backend b) {
       return DeviceType::Vulkan;
     case Backend::Metal:
       return DeviceType::Metal;
+    case Backend::ORT:
+      return DeviceType::ORT;
     case Backend::Undefined:
       AT_ERROR("Undefined backend is not a valid device type");
     default:
@@ -220,6 +229,7 @@ static inline Backend backendToCPU(Backend b) {
       return Backend::SparseCPU;
     case Backend::MSNPU:
     case Backend::XLA:
+    case Backend::ORT:
       return Backend::CPU;
     case Backend::MkldnnCPU:
       return Backend::MkldnnCPU;
@@ -242,6 +252,7 @@ static inline Backend backendToCUDA(Backend b) {
     case Backend::FPGA:
     case Backend::MSNPU:
     case Backend::XLA:
+    case Backend::ORT:
       return Backend::CUDA;
     case Backend::SparseCPU:
     case Backend::SparseCUDA:
@@ -262,6 +273,7 @@ static inline Backend backendToHIP(Backend b) {
     case Backend::FPGA:
     case Backend::MSNPU:
     case Backend::XLA:
+    case Backend::ORT:
       return Backend::HIP;
     case Backend::SparseCPU:
     case Backend::SparseCUDA:
@@ -305,6 +317,8 @@ static inline const char* toString(Backend b) {
       return "QuantizedCPU";
     case Backend::QuantizedCUDA:
       return "QuantizedCUDA";
+    case Backend::ORT:
+      return "ORT";
     default:
       return "UNKNOWN_BACKEND";
   }

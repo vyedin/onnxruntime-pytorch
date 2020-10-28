@@ -25,11 +25,12 @@ enum class DeviceType : int16_t {
   XLA = 9, // XLA / TPU
   Vulkan = 10, // Vulkan
   Metal = 11, //Metal
+  ORT = 12, // ONNX Runtime
   // NB: If you add more devices:
   //  - Change the implementations of DeviceTypeName and isValidDeviceType
   //    in DeviceType.cpp
   //  - Change the number below
-  COMPILE_TIME_MAX_DEVICE_TYPES = 12,
+  COMPILE_TIME_MAX_DEVICE_TYPES = 13,
   ONLY_FOR_TEST = 20901, // This device type is only for test.
 };
 
@@ -41,6 +42,7 @@ constexpr DeviceType kMSNPU = DeviceType::MSNPU;
 constexpr DeviceType kXLA = DeviceType::XLA;
 constexpr DeviceType kVulkan = DeviceType::Vulkan;
 constexpr DeviceType kMetal = DeviceType::Metal;
+constexpr DeviceType kORT = DeviceType::ORT;
 
 // define explicit int constant
 constexpr int COMPILE_TIME_MAX_DEVICE_TYPES =
