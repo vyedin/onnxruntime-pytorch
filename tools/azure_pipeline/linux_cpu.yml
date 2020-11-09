@@ -18,11 +18,10 @@ jobs:
   - task: CmdLine@2
     inputs:
       script: |
-        mkdir -p $(Build.SourcesDirectory)/build 
         docker run --rm \
           --volume $(Build.SourcesDirectory):/onnxruntime_pytorch_src \
+          --volume $(Build.BinariesDirectory):/onnxruntime_pytorch_src/build \
           -w /onnxruntime_pytorch_src \
-          --user "$(id -u):$(id -g)" \
           --env BUILD_ENVIRONMENT=pytorch-linux-xenial-py3.6-gcc5.4-ort \
           onnxtraining.azurecr.io/public/pytorch-eager-mode-ci:0.1 \
             bash -c "/onnxruntime_pytorch_src/.jenkins/pytorch/build.sh \
