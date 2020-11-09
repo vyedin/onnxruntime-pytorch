@@ -19,7 +19,7 @@ jobs:
     inputs:
       script: |
         mkdir -p $(Build.SourcesDirectory)/build 
-        docker run --rm \
+        docker run --rm -u root \
           --volume $(Build.SourcesDirectory):/onnxruntime_pytorch_src \
           -w /onnxruntime_pytorch_src \
           --env BUILD_ENVIRONMENT=pytorch-linux-xenial-py3.6-gcc5.4-ort \
