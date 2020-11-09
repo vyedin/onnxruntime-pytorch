@@ -62,6 +62,11 @@ if ! which conda; then
   fi
 fi
 
+if [[ "$BUILD_ENVIRONMENT" == *ort* ]]; then
+  export USE_ORT=1
+fi
+
+
 if [[ "$BUILD_ENVIRONMENT" == *libtorch* ]]; then
   POSSIBLE_JAVA_HOMES=()
   POSSIBLE_JAVA_HOMES+=(/usr/local)
