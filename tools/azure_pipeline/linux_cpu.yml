@@ -18,6 +18,7 @@ jobs:
   - task: CmdLine@2
     inputs:
       script: |
+        mkdir -p $(Build.SourcesDirectory)/build 
         docker run --rm \
           --volume $(Build.SourcesDirectory):/onnxruntime_pytorch_src \
           -w /onnxruntime_pytorch_src \
