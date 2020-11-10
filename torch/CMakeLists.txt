@@ -245,9 +245,9 @@ add_custom_command(
     "${TORCH_ROOT}"
 )
 
-list(APPEND TORCH_PYTHON_SRCS
-  ${TORCH_SRC_DIR}/onnxruntime/ORTBackend.cpp
-)
+#list(APPEND TORCH_PYTHON_SRCS
+#  ${TORCH_SRC_DIR}/onnxruntime/ORTBackend.cpp
+#)
 
 add_library(torch_python SHARED ${TORCH_PYTHON_SRCS})
 if(HAVE_SOVERSION)
