@@ -287,6 +287,11 @@ test_xla() {
   assert_git_not_dirty
 }
 
+test_ort() {
+  echo "Running ORT Eager Tests"
+  pytest test/ort_eager/test_ort_eager.py
+}
+
 # Do NOT run this test before any other tests, like test_python_shard1, etc.
 # Because this function uninstalls the torch built from branch, and install
 # nightly version.
@@ -388,6 +393,8 @@ elif [[ "${BUILD_ENVIRONMENT}" == pytorch-linux-xenial-cuda9.2-cudnn7-py3-gcc5.4
   # test cpp extension for xenial + cuda 9.2 + gcc 5.4 to make sure
   # cpp extension can be built correctly under this old env
   test_cpp_extensions
+elif [[ "${BUILD_ENVIRONMENT}" == *ort* ]]; then
+  test_ort
 else
   install_torchvision
   test_python_shard1

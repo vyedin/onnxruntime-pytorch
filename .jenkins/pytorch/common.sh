@@ -64,7 +64,7 @@ declare -f -t trap_add
 
 trap_add cleanup EXIT
 
-if [[ "$BUILD_ENVIRONMENT" != *pytorch-win-* ]]; then
+if [[ "$BUILD_ENVIRONMENT" != *pytorch-win-* && "$BUILD_ENVIRONMENT" != *ort* ]]; then
   if which sccache > /dev/null; then
     # Save sccache logs to file
     sccache --stop-server || true
