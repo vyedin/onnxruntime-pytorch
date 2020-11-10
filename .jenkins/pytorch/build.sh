@@ -309,3 +309,11 @@ if [[ "${BUILD_ENVIRONMENT}" == *xla* ]]; then
   popd
   assert_git_not_dirty
 fi
+
+if [[ "${BUILD_ENVIRONMENT}" == *ort* ]]; then
+  echo "Building torch_ort extension...."
+  pushd torch_onnxruntime
+  python setup.py install
+  popd
+fi
+
