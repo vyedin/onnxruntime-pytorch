@@ -313,7 +313,8 @@ fi
 if [[ "${BUILD_ENVIRONMENT}" == *ort* ]]; then
   echo "Building torch_ort extension...."
   pushd torch_onnxruntime
-  python setup.py install
+  python setup.py bdist_wheel
+  python -mpip install dist/*.whl
   popd
 fi
 
