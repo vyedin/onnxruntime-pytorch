@@ -1,3 +1,4 @@
+#include <torch/extension.h>
 #include <ATen/Context.h>
 #include <torch/library.h>
 #include <ATen/CPUGeneratorImpl.h>
@@ -39,4 +40,8 @@ Tensor ort_zeros(
 
 TORCH_LIBRARY_IMPL(aten, ORT, m) {
   m.impl("zeros", ort_zeros);
+}
+
+PYBIND11_MODULE(torch_ort, m) {
+//TODO: init ort backend
 }
