@@ -32,7 +32,7 @@ std::string DeviceTypeName(DeviceType d, bool lower_case) {
     case DeviceType::Metal:
       return lower_case ? "metal" : "METAL";
     case DeviceType::ORT:
-      return lower_case ? "ort" : "METAL";
+      return lower_case ? "ort" : "ORT";
     default:
       AT_ERROR(
           "Unknown device: ",
