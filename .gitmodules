@@ -133,3 +133,4 @@
 [submodule "torch_onnxruntime/onnxruntime"]
 	path = torch_onnxruntime/onnxruntime
 	url = https://github.com/microsoft/onnxruntime.git
+	branch = eager_mode
