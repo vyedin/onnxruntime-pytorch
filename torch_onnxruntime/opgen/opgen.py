@@ -21,6 +21,10 @@ regdecs_path = os.path.realpath(os.path.join(
   'ATen',
   'RegistrationDeclarations.h'))
 
+onnx_ops_config_path = os.path.realpath(os.path.join(
+  os.path.dirname(__file__),
+  'onnx_ops.config'))
+
 def generate_includes(writer):
   writer.write('#include <torch/extension.h> \n')
   writer.write('#include "ORTUtil.h" \n')
@@ -101,9 +105,13 @@ def write_func_signature(writer, cpp_func):
     param_list_member.write(writer)
   writer.write(")")
 
-with opgen.parser.cpp_create_from_file(regdecs_path) as parser:
+if len(sys.argv) == 2:
+  writer = open(sys.argv[1], 'wt')
+else:
   writer = sys.stdout
-  op_configs = load_config('onnx_ops.config')
+
+with opgen.parser.cpp_create_from_file(regdecs_path) as parser:
+  op_configs = load_config(onnx_ops_config_path)
 
   generate_includes(writer)
   begin_namespace(writer)
@@ -189,3 +197,5 @@ with opgen.parser.cpp_create_from_file(regdecs_path) as parser:
   writer.write("}\n")
 
   end_namespace(writer)
+
+writer.close()
