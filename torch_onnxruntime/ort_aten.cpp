@@ -52,9 +52,8 @@ at::Tensor ort_aten_empty_memory_format(at::IntArrayRef size,
     options);
 }
 
-<<<<<<< HEAD:torch_onnxruntime/ORTAten.cpp
-Tensor ort_aten_empty_strided(IntArrayRef size, IntArrayRef stride, c10::optional<ScalarType> dtype_opt,
-                         c10::optional<Layout> layout_opt, c10::optional<Device> device_opt, c10::optional<bool> pin_memory_opt) {
+at::Tensor ort_aten_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, c10::optional<at::ScalarType> dtype_opt,
+                         c10::optional<at::Layout> layout_opt, c10::optional<at::Device> device_opt, c10::optional<bool> pin_memory_opt) {
   ORT_LOG << "aten::empty_strided";
   // TODO: handle stride
   // TODO: how to handle type conversion
@@ -62,20 +61,16 @@ Tensor ort_aten_empty_strided(IntArrayRef size, IntArrayRef stride, c10::optiona
   assert(device_opt.has_value());
   // TODO: how to support layout
   assert(!layout_opt.has_value());
-  caffe2::TypeMeta dtype = scalarTypeToTypeMeta(dtype_or_default(dtype_opt));
+  at::ScalarType dtype = c10::dtype_or_default(dtype_opt);
   auto& invoker = GetORTInvoker(*device_opt);
   CreateMLValue<float>(invoker.GetCurrentExecutionProvider().GetAllocator(0, OrtMemTypeDefault),
                        size.vec(), {}, &ot);
-  
   return new_with_orttensor_ort(
     std::move(ot),
     dtype);
 }
 
-Tensor ort_aten_reshape(at::Tensor const& self, IntArrayRef shape) {
-=======
 at::Tensor ort_aten_reshape(at::Tensor const& self, at::IntArrayRef shape) {
->>>>>>> eager-ort:torch_onnxruntime/ort_aten.cpp
   ORT_LOG << "torch.reshape";
 
   return new_with_orttensor_ort(

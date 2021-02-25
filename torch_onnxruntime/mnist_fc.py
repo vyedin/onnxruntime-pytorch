@@ -36,7 +36,8 @@ with torch.no_grad():
     print("inference result is: ")
     print(pred)
 
-    device = get_ort_device("Apollo")
+    device = torch_ort.device.apollo()
+
     model.to(device)
 
     ort_batch = batch.to(device)

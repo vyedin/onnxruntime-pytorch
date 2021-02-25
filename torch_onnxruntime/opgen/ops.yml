@@ -56,3 +56,15 @@ aten::relu:
 aten::sub.Tensor:
   onnx_op: Sub
   params: [0, 1]
+
+aten::t:
+  onnx_op: Transpose
+  params: [0]
+
+aten::addmm:
+  onnx_op: Gemm
+  params: [1, 2, 0]
+
+aten::empty_strided:
+  signature_only: true
+  unboxed: true
