@@ -1,41 +1,45 @@
+#include <core/providers/cpu/cpu_execution_provider.h>
+
 #include "ort_backends.h"
 
-#include "core/eager/ort_kernel_invoker.h"
-#include "core/providers/cpu/cpu_execution_provider.h"
-
-namespace at {
-namespace native {
-namespace ort {
-namespace detail {
+namespace torch_ort {
+namespace eager {
 
 using namespace onnxruntime;
 
-ORTBackendsManager::ORTBackendsManager(){
-  // hardcode to add 1 cpu EP
-  auto cpu_ep = onnxruntime::make_unique<CPUExecutionProvider>(CPUExecutionProviderInfo(false));
-  backends_.push_back(std::move(onnxruntime::make_unique<onnxruntime::ORTInvoker>(std::move(cpu_ep))));
-  ort_device_indices_.insert({{ORTDeviceKind::kCPU, 0}, backends_.size() - 1});
-  // add 1 fake apollo EP
-  auto apollo_ep = onnxruntime::make_unique<CPUExecutionProvider>(CPUExecutionProviderInfo(false));
-  backends_.push_back(std::move(onnxruntime::make_unique<onnxruntime::ORTInvoker>(std::move(apollo_ep))));
-  ort_device_indices_.insert({{ORTDeviceKind::kApollo, 0}, backends_.size() - 1});
+ORTBackendsManager& GetORTBackendsManager() {
+  static ORTBackendsManager instance;
+  return instance;
 }
 
-onnxruntime::ORTInvoker& ORTBackendsManager::GetInvoker(const Device device){
-  size_t index = device.index() < 0 ? 0 : device.index();
-  assert(device.type() == DeviceType::ORT && index < backends_.size());
-  return *backends_[index];
+onnxruntime::ORTInvoker& GetORTInvoker(const at::Device device) {
+  return GetORTBackendsManager().GetInvoker(device);
 }
 
-int ORTBackendsManager::GetPytorchDeviceIndex(ORTDeviceKind devkind, int index){
-  auto it = ort_device_indices_.find({devkind, index});
-  if (it == ort_device_indices_.end())
-    return -1;
-  return it->second;
+onnxruntime::ORTInvoker& ORTBackendsManager::GetInvoker(const at::Device device) {
+  TORCH_CHECK(device.type() == at::DeviceType::ORT, "must be an ORT device");
+  TORCH_CHECK(device.index() >= 0, "must have a valid index");
+
+  auto lookup = backends_.find(device.index());
+  if (lookup != backends_.end()) {
+    return *lookup->second;
+  }
+
+  // FIXME: create the correct EP from (device_kind, device_index):
+  ORTDeviceKind device_kind;
+  uint8_t device_index;
+  GetORTDeviceKindAndIndex(device.index(), device_kind, device_index);
+
+  auto ep = onnxruntime::make_unique<onnxruntime::CPUExecutionProvider>(
+    onnxruntime::CPUExecutionProviderInfo(false));
+
+  auto invoker = 
+    onnxruntime::make_unique<onnxruntime::ORTInvoker>(
+      std::move(ep));
+
+  backends_.insert({device.index(), std::move(invoker)});
+  return *backends_[device.index()];
 }
 
-
-} // namespace detail
-} // namespace ort
-} // namespace native
-} // namespace at
+} // namespace eager
+} // namespace torch_ort

@@ -1,23 +1,14 @@
 #pragma once
 
+#include <core/session/onnxruntime_cxx_api.h>
+
+#include "ort_backends.h"
+
 // FIXME: no idea how to increase logging level for INFO, DEBUG, etc
 #define ORT_LOG LOG(WARNING) << "[ORT] "
 
-#include "core/framework/ml_value.h"
-#include "core/framework/tensor.h"
-#include "core/eager/ort_kernel_invoker.h"
-#include <torch/extension.h>
-
-#include "core/session/onnxruntime_cxx_api.h"
-#include "ort_backends.h"
-
-namespace at {
-namespace native {
-namespace ort {
-namespace detail {
-
-ORTBackendsManager& GetORTBackends();
-onnxruntime::ORTInvoker& GetORTInvoker(Device device);
+namespace torch_ort {
+namespace eager {
 
 template <typename T>
 inline void CopyVectorToTensor(const std::vector<T>& value, onnxruntime::Tensor& tensor) {
@@ -66,9 +57,7 @@ void CreateMLValue(void* data_ptr, const std::vector<int64_t>& dims, OrtValue* p
                   onnxruntime::DataTypeImpl::GetType<onnxruntime::Tensor>()->GetDeleteFunc());
 }
 
-std::vector<int64_t> GetStride(const std::vector<int64_t>& shape, int64_t element_size);
+std::vector<int64_t> GetStrides(const std::vector<int64_t>& shape, int64_t element_size);
 
-} // namespace detail
-} // namespace ort
-} // namespace native
-} // namespace at
+} // namespace eager
+} // namespace torch_ort

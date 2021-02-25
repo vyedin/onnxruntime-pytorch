@@ -1,13 +1,10 @@
 #pragma once
 
-#include "core/framework/ml_value.h"
-#include "core/framework/tensor.h"
-#include "core/eager/ort_kernel_invoker.h"
+#include <core/framework/ml_value.h>
+#include <core/eager/ort_kernel_invoker.h>
 
-namespace at {
-namespace native {
-namespace ort {
-namespace detail {
+namespace torch_ort {
+namespace eager {
 
 OrtValue reshape_copy(
   onnxruntime::ORTInvoker& invoker,
@@ -21,7 +18,5 @@ OrtValue add(onnxruntime::ORTInvoker& invoker,
 void copy(onnxruntime::ORTInvoker& invoker, 
           const OrtValue& src, OrtValue& dst);
 
-} // namespace detail
-} // namespace ort
-} // namespace native
-} // namespace at
+} // namespace eager
+} // namespace torch_ort
