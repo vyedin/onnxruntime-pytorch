@@ -7,7 +7,7 @@ namespace eager {
 c10::intrusive_ptr<c10::TensorImpl> ORTTensorImpl::shallow_copy_and_detach(
   const c10::VariableVersion& version_counter,
   bool allow_tensor_metadata_change) const {
-  auto impl = c10::make_intrusive<ORTTensorImpl>(tensor_, nullptr);
+  auto impl = c10::make_intrusive<ORTTensorImpl>(tensor_, at::TensorOptions().dtype(this->dtype()).device(this->device()));
   copy_tensor_metadata(
     this,
     impl.get(),
@@ -37,6 +37,7 @@ int64_t ORTTensorImpl::dim() const {
 }
 
 int64_t ORTTensorImpl::numel() const {
+  std::cout << "DEBUG:   ORT Tensor numel" << std::endl;
   const_cast<ORTTensorImpl*>(this)->cacheSizeMetadata();
   return c10::TensorImpl::numel();
 }

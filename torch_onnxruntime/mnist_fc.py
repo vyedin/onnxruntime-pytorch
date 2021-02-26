@@ -20,23 +20,20 @@ class NeuralNet(nn.Module):
         out = self.fc2(out)
         return out
 
-#todo: move it to torch_ort as util function
-def get_ort_device(devkind, index = 0):
-    return torch.device("ort", torch_ort.get_ort_device(devkind, index))
-
 input_size = 784
 hidden_size = 500
 num_classes = 10
 batch_size = 128
-model = NeuralNet(input_size, hidden_size, num_classes)
 
 batch = torch.rand((batch_size, input_size))
+device = torch_ort.device.apollo()
+
 with torch.no_grad():
+
+    model = NeuralNet(input_size, hidden_size, num_classes)
     pred = model(batch)
     print("inference result is: ")
     print(pred)
-
-    device = torch_ort.device.apollo()
 
     model.to(device)
 

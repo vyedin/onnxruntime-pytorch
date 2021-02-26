@@ -67,7 +67,7 @@ at::Tensor ort_aten_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, 
                        size.vec(), {}, &ot);
   return new_with_orttensor_ort(
     std::move(ot),
-    dtype);
+    at::device(*device_opt).dtype(dtype));
 }
 
 at::Tensor ort_aten_reshape(at::Tensor const& self, at::IntArrayRef shape) {
