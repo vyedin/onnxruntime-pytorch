@@ -7,7 +7,7 @@ import numpy as np
 class TestCustomOps(unittest.TestCase):
 
     def test_basic(self):
-        device = torch.device("ort")
+        device = torch_ort.device.apollo()
         x = torch.empty(5, 3, device = device)
         y = torch.empty(5, 3, device = device)
         z = x + y
@@ -15,7 +15,7 @@ class TestCustomOps(unittest.TestCase):
         assert torch.allclose(z.cpu(), z_pt)
     
     def test_sub(self):
-        device = torch.device("ort")
+        device = torch_ort.device.apollo()
         x = torch.empty(5, 3, device = device)
         y = torch.empty(5, 3, device = device)
         z = x - y
@@ -23,7 +23,7 @@ class TestCustomOps(unittest.TestCase):
         assert torch.allclose(z.cpu(), z_pt)
     
     def test_relu(self):
-        device = torch.device("ort")
+        device = torch_ort.device.apollo()
         x = torch.empty(5, 3, device = device)
         z = torch.relu(x)
         z_pt = torch.relu(x.cpu())
