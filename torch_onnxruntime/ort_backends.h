@@ -58,7 +58,8 @@ private:
   static inline at::DeviceIndex MakePyTorchDeviceIndex(
     ORTDeviceKind device_kind,
     uint8_t device_index) {
-    return (uint8_t)device_kind << 8 | device_index;
+    //return (uint8_t)device_kind << 8 | device_index;
+    return 0;
   }
 };
 

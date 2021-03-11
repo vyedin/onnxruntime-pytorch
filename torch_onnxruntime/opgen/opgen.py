@@ -44,13 +44,24 @@ op_maps = [
   OpMap(
     'aten::view',
     signature_only = True),
+  OpMap('aten::sum.dim_IntList',
+    signature_only = True),
+  OpMap('aten::threshold_backward',
+    signature_only = True),
+  OpMap('aten::zeros_like',
+    signature_only = True),
+  OpMap('aten::add_.Tensor',
+    signature_only = True),
+  OpMap('aten::zero_',
+    signature_only = True),
   OpMap('aten::add.Tensor', 'Add'),
   OpMap('aten::mul.Tensor', 'Mul'),
   OpMap('aten::relu', 'Relu'),
   OpMap('aten::sub.Tensor', 'Sub'),
   OpMap('aten::t', 'Transpose'),
   OpMap('aten::addmm', 'Gemm',
-    ort_params = ['mat1', 'mat2', 'self'])
+    ort_params = ['mat1', 'mat2', 'self']),
+  OpMap('aten::mm', 'MatMul')
 ]
 
 op_maps = { op_map.torch_identifier: op_map for op_map in op_maps }

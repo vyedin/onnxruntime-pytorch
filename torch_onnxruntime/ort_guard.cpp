@@ -26,7 +26,7 @@ struct ORTGuardImpl final : public c10::impl::DeviceGuardImplInterface {
   at::Device exchangeDevice(at::Device d) const override {
     ORT_LOG_DEBUG << "ORTGuardImpl::exchangeDevice(" << d << ")";
     AT_ASSERT(d.type() == at::DeviceType::ORT);
-    AT_ASSERT(d.index() == 0);
+    ORT_LOG_DEBUG << "d index is: " << d.index();
     return d;
   }
 
