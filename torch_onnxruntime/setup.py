@@ -11,7 +11,11 @@ import subprocess
 import sys
 
 python_exe = sys.executable
-build_config = 'Release'
+
+if os.environ.get('TORCH_ORT_BUILD_CONFIG'):
+    build_config = os.environ['TORCH_ORT_BUILD_CONFIG']
+else:
+    build_config = 'Release'
 
 def is_debug_build():
     return build_config != 'Release'
