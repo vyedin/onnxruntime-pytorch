@@ -48,4 +48,8 @@ TORCH_LIBRARY_IMPL(_, AutogradXLA, m) {
   m.fallback(torch::CppFunction::makeFallthrough());
 }
 
+TORCH_LIBRARY_IMPL(_, AutogradORT, m) {
+  m.fallback(torch::CppFunction::makeFallthrough());
+}
+
 }

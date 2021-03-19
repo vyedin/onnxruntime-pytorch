@@ -45,6 +45,8 @@ DispatchKeySet getBackendKeySetFromAutograd(DispatchKey t) {
       return DispatchKeySet(DispatchKey::CUDA);
     case DispatchKey::AutogradXLA:
       return DispatchKeySet(DispatchKey::XLA);
+    case DispatchKey::AutogradORT:
+      return DispatchKeySet(DispatchKey::ORT);
     case DispatchKey::AutogradPrivateUse1:
       return DispatchKeySet(DispatchKey::PrivateUse1);
     case DispatchKey::AutogradPrivateUse2:

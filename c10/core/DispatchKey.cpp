@@ -73,6 +73,8 @@ const char* toString(DispatchKey t) {
       return "AutogradCUDA";
     case DispatchKey::AutogradXLA:
       return "AutogradXLA";
+    case DispatchKey::AutogradORT:
+      return "AutogradORT";
     case DispatchKey::AutogradPrivateUse1:
       return "AutogradPrivateUse1";
     case DispatchKey::AutogradPrivateUse2:
@@ -134,6 +136,8 @@ DispatchKey getAutogradKeyFromBackend(DispatchKey t) {
       return DispatchKey::AutogradCUDA;
     case DispatchKey::XLA:
       return DispatchKey::AutogradXLA;
+    case DispatchKey::ORT:
+      return DispatchKey::AutogradORT;
     case DispatchKey::PrivateUse1:
       return DispatchKey::AutogradPrivateUse1;
     case DispatchKey::PrivateUse2:

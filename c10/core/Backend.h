@@ -125,7 +125,7 @@ static inline Backend dispatchKeyToBackend(DispatchKey t) {
     return Backend::QuantizedCPU;
   } else if (t == DispatchKey::QuantizedCUDA) {
     return Backend::QuantizedCUDA;
-  } else if (t == DispatchKey::ORT) {
+  } else if (t == DispatchKey::ORT || t == DispatchKey::AutogradORT) {
     return Backend::ORT;
   } else if (t == DispatchKey::Undefined) {
     return Backend::Undefined;
