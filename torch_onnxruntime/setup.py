@@ -98,8 +98,9 @@ setup(
             extra_compile_args=extra_compile_args,
             include_dirs=ort_include_dir,
             library_dirs=ort_lib_dir,
-            extra_objects=ort_static_libs)
+            extra_objects=ort_static_libs),    
     ],
+    py_modules=["torch_ort_optimizers"],
     cmdclass={
         'build_ext': BuildExtension
     })

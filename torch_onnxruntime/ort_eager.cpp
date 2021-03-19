@@ -5,6 +5,7 @@
 
 #include "ort_backends.h"
 #include "ort_log.h"
+#include "ort_optimizers.h"
 
 namespace torch_ort {
 namespace eager {
@@ -22,6 +23,9 @@ PYBIND11_MODULE(torch_ort, torch_ort_module) {
       },
       py::arg("device_index") = -1);
   }
+
+  auto optimizer_module = torch_ort_module.def_submodule("optimizers");
+  optimizer_module.def("SGD", &optimizers::ort_SGD);
 }
 
 } // namespace eager
