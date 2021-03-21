@@ -292,7 +292,8 @@ at::Tensor& aten_zero_(at::Tensor& self){
   auto* ort_flag_tensor = flag_val.GetMutable<onnxruntime::Tensor>();
   CopyVectorToTensor<int64_t>({1}, *ort_flag_tensor);
 
-  std::vector<OrtValue> ort_out(1);
+  std::vector<OrtValue> ort_out;
+  ort_out.push_back(ort_in_self);
 
   auto status = invoker.Invoke(
     "ZeroGradient", {
@@ -304,13 +305,6 @@ at::Tensor& aten_zero_(at::Tensor& self){
     throw std::runtime_error(
       "ORT return failure status:" + status.ErrorMessage());
   
-  //TODO: fix the inplace
-  OrtValue ort_result = ort_out[0];
-  auto& ort_result_tensor = ort_result.Get<onnxruntime::Tensor>();
-  auto* ort_result_data = ort_result_tensor.DataRaw(ort_result_tensor.DataType());
-  auto* ort_self_tensor = ort_in_self.GetMutable<onnxruntime::Tensor>();
-  auto* ort_self_data = ort_self_tensor->MutableDataRaw(ort_self_tensor->DataType());
-  memcpy(ort_self_data, ort_result_data, ort_self_tensor->DataType()->Size() * ort_self_tensor->Shape().Size());
   return self;
 }
 
@@ -338,7 +332,8 @@ at::Tensor& aten_add__Tensor(
     throw std::runtime_error(
       "ORT return failure status: Mul: " + status.ErrorMessage());
 
-  std::vector<OrtValue> ort_out(1);
+  std::vector<OrtValue> ort_out;
+  ort_out.push_back(ort_in_self);
 
   status = invoker.Invoke(
     "Add", {
@@ -350,12 +345,6 @@ at::Tensor& aten_add__Tensor(
     throw std::runtime_error(
       "ORT return failure status: Add" + status.ErrorMessage());
 
-  OrtValue ort_result = ort_out[0];
-  auto& ort_result_tensor = ort_result.Get<onnxruntime::Tensor>();
-  auto* ort_result_data = ort_result_tensor.DataRaw(ort_result_tensor.DataType());
-  auto* ort_self_tensor = ort_in_self.GetMutable<onnxruntime::Tensor>();
-  auto* ort_self_data = ort_self_tensor->MutableDataRaw(ort_self_tensor->DataType());
-  memcpy(ort_self_data, ort_result_data, ort_self_tensor->DataType()->Size() * ort_self_tensor->Shape().Size());
   return self;
 }
 
