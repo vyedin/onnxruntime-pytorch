@@ -26,6 +26,7 @@ PYBIND11_MODULE(torch_ort, torch_ort_module) {
 
   auto optimizer_module = torch_ort_module.def_submodule("optimizers");
   optimizer_module.def("SGD", &optimizers::ort_SGD);
+  optimizer_module.def("Adam", &optimizers::ort_Adam);
 }
 
 } // namespace eager
