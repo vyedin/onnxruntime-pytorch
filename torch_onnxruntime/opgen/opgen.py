@@ -53,6 +53,10 @@ class Mod(ONNXOp):
   def __init__(self, A, B, Fmod=None):
     super().__init__('Mod', 1, A, B,
       Fmod=ONNXAttr(Fmod, ONNXType.INT))
+      
+class Dropout(ONNXOp):
+  def __init__(self, data, ratio, training_mode, seed=None):
+    super().__init__('Dropout', 1, data, ratio, training_mode, seed=seed)
 
 single_arg_op_names = ["data", "_shape_as_tensor", "abs", "absolute", "angle", "sgn",
 "_conj", "acos", "arccos", "acosh", "arccosh", "asinh", "arcsinh",
@@ -109,7 +113,7 @@ ops = {
   'aten::t': Transpose('self'),
   'aten::relu': Relu('self'),
   'aten::mm': MatMul('self', 'mat2'),
-  
+  'aten::dropout': Dropout('input', 'p', 'train'),
   'aten::sum.dim_IntList': ReduceSum('self', 'dim', KeepDims='keepdim'),
   'aten::threshold_backward': ReluGrad('grad_output', 'self'),
 

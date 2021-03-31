@@ -43,5 +43,7 @@ print (d.cpu ())
 a = torch.tensor([[10, 10]], dtype=torch.float).to(device)
 b = torch.tensor([[3.3, 3.3]]).to(device)
 c = torch.fmod(a, b)
-
 print(c.cpu())
+
+drop = torch.nn.functional.dropout(torch.tensor([[1, 1, 1, 1, 1]], dtype=torch.float), 0.5, True)
+print(drop.cpu())
