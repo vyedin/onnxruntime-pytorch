@@ -42,24 +42,6 @@ ops = {
 
   'aten::softshrink': Shrink('self', bias='lambd', lambd='lambd'), #yes, bias is set to 'lambd'
   'aten::hardshrink': Shrink('self', bias=0, lambd='lambd'),
-
-  # 'aten::argmax': ArgMax('self', axis='dim', keepdims='keepdim', select_last_index=0),
-  # 'aten::argmin': ArgMin('self', axis='dim', keepdims='keepdim', select_last_index=0)
-  # onnxruntime-pytorch/torch_onnxruntime/ort_aten.h:60:28: note: candidate function not viable: no known conversion from 'c10::optional<int64_t>' (aka 'optional<long long>') to 'at::Scalar' for 2nd argument
-  
-  # 'aten::__rshift__.Scalar': BitShift('self', 'other', direction='"RIGHT"'),
-  # 'aten::__rshift__.Tensor': BitShift('self', 'other', direction='"RIGHT"')
-  # 'aten::__lshift__.Scalar': BitShift('self', 'other', direction='"LEFT"'),
-  # 'aten::__lshift__.Tensor': BitShift('self', 'other', direction='"LEFT"')
-
-  # 'aten::clip': Clip('self', 'min', 'max'),
-  # 'aten::clamp': Clip('self', 'min', 'max'),
-  # torch_onnxruntime/ort_aten.h:23:16: note: candidate function not viable: no known conversion from 'c10::optional<Scalar>' to 'const at::Scalar' for 2nd argument
- 
-  # 'aten::cat': ConcatFromSequence('tensors', axis='dim') #not sure if Concat or ConcatFromSequence here
-  # onnxruntime-pytorch/torch_onnxruntime/ort_aten.g.cpp:519:41: error: no member named 'device' in 'c10::ArrayRef<at::Tensor>'
-
-  'aten::convolution': Conv('input', 'weight', 'bias', dilations='dilation', group='groups', pads='padding', strides='stride'),
  }
 
 
